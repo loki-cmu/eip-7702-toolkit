@@ -1,0 +1,20 @@
+[package]
+name = "interact-eth"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+alloy = { version = "1.0.9", features = [
+    "eips",
+    "full",
+    "json-rpc",
+    "node-bindings",
+    "rpc-client",
+    "rpc-types-debug",
+    "rpc-types-trace",
+    "signer-mnemonic",
+] }
+anyhow = "1.0.98"
+tokio = { version = "1", features = ["full"] }
+hex = "0.4.3"
+#url = "2.5.4"
