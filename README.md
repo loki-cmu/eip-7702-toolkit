@@ -228,9 +228,61 @@ Process finished with exit code 0
 
 这样 Alice 的账户就不再是 EIP-7702 委托账户，任何合约授权都被移除。
 
----
-
 ## 总结
 
 send_eip7702_transaction 演示了如何在本地 Anvil 节点上，使用 EIP-7702 机制，Alice 授权 Bob 以它的名义调用合约，Bob
 构造并发送交易，最终合约事件被成功触发。Bob代付交易费用，Alice账户仍为EIP-7702委托账户，Alice可以随时撤销合约授权委托。
+
+---
+
+Here is a refined and clearer format for the transaction specification section:
+
+### Transaction Specification
+
+EIP-7702 introduces a new transaction type called the “set code transaction”.
+
+- **TransactionType:** `0x04`
+- **TransactionPayload:** RLP serialization of the following fields:
+
+```
+rlp([
+chain_id,
+nonce,
+max_priority_fee_per_gas,
+max_fee_per_gas,
+gas_limit,
+destination,
+value,
+data,
+access_list,
+authorization_list,
+signature_y_parity,
+signature_r,
+signature_s
+])
+```
+
+- **authorization_list:**  
+  A list of authorizations, each as:
+
+```
+[chain_id, address, nonce, y_parity, r, s]
+```
+
+#### Field Notes
+
+- The fields `chain_id`, `nonce`, `max_priority_fee_per_gas`, `max_fee_per_gas`, `gas_limit`, `destination`, `value`,
+  `data`, and `access_list` follow the same semantics as EIP-4844.
+- A null `destination` is not valid.
+- The `authorization_list` specifies the code (by address) the signer wishes to execute in the context of their EOA.
+- The transaction is invalid if `authorization_list` is empty.
+
+#### Receipt Payload
+
+- The receipt is RLP-encoded as:
+
+```
+rlp([status, cumulative_transaction_gas_used, logs_bloom, logs])
+```
+
+For more details, see: [https://eip7702.io/](https://eip7702.io/)
