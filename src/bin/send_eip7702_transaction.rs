@@ -64,9 +64,11 @@ async fn main() -> anyhow::Result<()> {
 
     let alice: PrivateKeySigner = anvil.keys()[0].clone().into();
     let bob: PrivateKeySigner = anvil.keys()[1].clone().into();
+    let alice2: PrivateKeySigner = anvil.keys()[2].clone().into();
 
     println!("alice address: {:?}", alice.address());
     println!("bob address: {:?}", bob.address());
+    println!("alice 2 address: {:?}", alice2.address());
 
     let rpc_url = anvil.endpoint_url();
     let provider = ProviderBuilder::new()
@@ -82,13 +84,17 @@ async fn main() -> anyhow::Result<()> {
 
     // Alice signs delegation to contract
     let nonce = provider.get_transaction_count(alice.address()).await?;
-    let signed_auth = sign_authorization(&alice, anvil.chain_id(), *contract.address(), nonce);
+    let signed_auth_1 = sign_authorization(&alice, anvil.chain_id(), *contract.address(), nonce);
+
+    // Alice signs delegation to contract
+    let nonce = provider.get_transaction_count(alice2.address()).await?;
+    let signed_auth_2 = sign_authorization(&alice2, anvil.chain_id(), *contract.address(), nonce);
 
     let emit_hello_calldata = contract.emitHello().calldata().to_owned();
 
     let tx = TransactionRequest::default()
         .with_to(alice.address())
-        .with_authorization_list(vec![signed_auth])
+        .with_authorization_list(vec![signed_auth_1, signed_auth_2])
         .with_input(emit_hello_calldata);
 
     let pending_tx = provider.send_transaction(tx).await?;
@@ -111,6 +117,8 @@ async fn main() -> anyhow::Result<()> {
     println!("bob sponsor代付 gas");
     println!("alice balance: {}", balance_alice);
     println!("bob balance: {}", balance_bob);
+    let balance_alice2 = provider.get_balance(alice2.address()).await?;
+    println!("alice2 balance: {}", balance_alice2);
 
     let code = provider.get_code_at(alice.address()).await?;
     print_code_status(&code, "Alice");
