@@ -1,4 +1,4 @@
-//! Example of how to transfer ERC20 tokens from one account to another.
+//! Example: Alice calls the contract to transfer ETH to Bob.
 
 use alloy::node_bindings::Anvil;
 use alloy::signers::local::PrivateKeySigner;
