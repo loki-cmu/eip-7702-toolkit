@@ -46,4 +46,31 @@ contract SimpleTransferTest is Test {
         assertEq(alice.balance, INITIAL_BALANCE, "Alice's balance should remain unchanged");
         assertEq(bob.balance, 0, "Bob's balance should remain unchanged");
     }
+
+    function test_TransferWithSig_Success() public {
+        uint256 transferAmount = 1 ether;
+        uint256 nonce = 1;
+        address dave = makeAddr("dave");
+        vm.deal(dave, INITIAL_BALANCE);
+
+        uint256 alicePrivateKey = 0xA11CE; 
+        alice = vm.addr(alicePrivateKey);
+
+        // Alice signs the transfer
+        bytes32 hash = keccak256(abi.encodePacked(alice, bob, transferAmount, nonce, address(simpleTransfer)));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)));
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        uint256 bobBalanceBefore = bob.balance;
+        uint256 daveBalanceBefore = dave.balance;
+
+        // Dave calls transferWithSig, pays gas and value
+        vm.prank(dave);
+        simpleTransfer.transferWithSig{value: transferAmount}(alice, bob, transferAmount, nonce, signature);
+
+        // Bob should receive the amount
+        assertEq(bob.balance, bobBalanceBefore + transferAmount, "Bob's balance should increase");
+        // Dave's balance should decrease by transferAmount (gas cost ignored)
+        assertEq(dave.balance, daveBalanceBefore - transferAmount, "Dave's balance should decrease");
+    }
 }
