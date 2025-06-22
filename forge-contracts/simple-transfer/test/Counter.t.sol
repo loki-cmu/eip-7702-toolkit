@@ -57,9 +57,6 @@ contract SimpleTransferTest is Test {
         address dave = makeAddr("dave");
         vm.deal(dave, INITIAL_BALANCE);
 
-        // uint256 alicePrivateKey = 0xA11CE;
-        // alice = vm.addr(alicePrivateKey);
-
         // Alice signs the transfer
         bytes32 hash = keccak256(abi.encodePacked(alice, bob, transferAmount, nonce, address(simpleTransfer)));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)));
@@ -78,6 +75,30 @@ contract SimpleTransferTest is Test {
         assertEq(dave.balance, daveBalanceBefore - transferAmount, "Dave's balance should decrease");
     }
 
+    function test_TransferWithSig_From_Dave_Success() public {
+        uint256 transferAmount = 1 ether;
+        uint256 nonce = 1;
+        (address daveAddr, uint256 davePrivateKey) = makeAddrAndKey("dave");
+        vm.deal(daveAddr, INITIAL_BALANCE);
+
+        // Alice signs the transfer
+        bytes32 hash = keccak256(abi.encodePacked(daveAddr, bob, transferAmount, nonce, address(simpleTransfer)));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(davePrivateKey, keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)));
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        uint256 bobBalanceBefore = bob.balance;
+        uint256 daveBalanceBefore = daveAddr.balance;
+
+        // Dave calls transferWithSig, pays gas and value
+        vm.prank(daveAddr);
+        simpleTransfer.transferWithSig{value: transferAmount}(daveAddr, bob, transferAmount, nonce, signature);
+
+        // Bob should receive the amount
+        assertEq(bob.balance, bobBalanceBefore + transferAmount, "Bob's balance should increase");
+        // Dave's balance should decrease by transferAmount (gas cost ignored)
+        assertEq(daveAddr.balance, daveBalanceBefore - transferAmount, "Dave's balance should decrease");
+    }
+
     function signSignature(
         uint256 _alicePrivateKey,
         address _alice,
@@ -85,14 +106,14 @@ contract SimpleTransferTest is Test {
         uint256 transferAmount,
         uint256 nonce,
         address contractAddr
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         bytes32 hash = keccak256(abi.encodePacked(_alice, _bob, transferAmount, nonce, contractAddr));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_alicePrivateKey, keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)));
         bytes memory sig = abi.encodePacked(r, s, v);
         return sig;
     }
 
-    function test_VerifyProvidedSignature() public {
+    function test_VerifyProvidedSignature() pure public {
         // Test data provided by the user
         uint256 _alicePrivateKey = 0xd2eb31e7ec97467f3e382903851bced12ba44fc230d93cdddcfd7726c94a2f6e;
         address _alice = vm.addr(_alicePrivateKey);
