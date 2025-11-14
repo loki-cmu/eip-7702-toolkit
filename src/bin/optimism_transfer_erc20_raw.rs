@@ -1,11 +1,15 @@
+use alloy::network::EthereumWallet;
+use alloy::network::TransactionBuilder;
 use alloy::{
-    primitives::{Address, U256},
+    primitives::{Address, ChainId, U256},
     providers::{Provider, ProviderBuilder},
+    rpc::types::TransactionRequest,
     signers::local::PrivateKeySigner,
     transports::http::reqwest::Url,
 };
 use anyhow::Result;
 
+#[allow(dead_code)]
 fn display_eth_balance(balance: U256) {
     // exact decimal ETH (18 decimals)
     let wei_per_eth = U256::from(1_000_000_000_000_000_000u128);
@@ -31,6 +35,7 @@ fn display_eth_balance(balance: U256) {
 #[tokio::main]
 async fn main() -> Result<()> {
     // Connect to an Optimism node.
+    let chain_id: ChainId = 11155420;
     let rpc_url = "https://sepolia.optimism.io".parse::<Url>()?;
     let provider = ProviderBuilder::new().connect_http(rpc_url);
 
@@ -42,12 +47,50 @@ async fn main() -> Result<()> {
     let alice: Address = alice_signer.address();
     let bob: Address = bob_signer.address();
 
-    let balance = provider.get_balance(alice).await?;
-    display_eth_balance(balance);
-    let balance = provider.get_balance(bob).await?;
-    display_eth_balance(balance);
+    // let balance = provider.get_balance(alice).await?;
+    // println!("Alice balance: {}", balance);
+    // display_eth_balance(balance);
+    // let balance = provider.get_balance(bob).await?;
+    // display_eth_balance(balance);
 
-    // println!("Sent transaction: {tx_hash}");
+    let value_one_gwei = U256::from(1_000_000_000); // 1 Gwei
+    // Build a transaction to send 1 Gwei from Alice to Bob.
+    // The `from` field is automatically filled to the first signer's address (Alice).
+
+    // Value 0.000000001 ETH
+    // Transaction fee 0.000021000005250232 ETH
+    // Gas price 0.00000000100000025 ETH (1.00000025 Gwei)
+    // Gas usage & limit by txn 21,000 | 21,000 100%
+    // Gas fees (Gwei) Base: 0.00000025| Max: 20| Max priority: 1
+    // L1 gas used by txn 1,600
+    // L1 gas price 0.000000000000000012 ETH (0.000000012 Gwei)
+    // L1 fee 0.000000000000000232 ETH
+
+    let tx = TransactionRequest::default()
+        .to(bob)
+        .nonce(0)
+        .with_chain_id(chain_id)
+        .value(value_one_gwei)
+        .gas_limit(21_000)
+        .max_priority_fee_per_gas(1_000_000_000)
+        .max_fee_per_gas(20_000_000_000);
+
+    let wallet = EthereumWallet::from(alice_signer);
+    let tx_envelope = tx.build(&wallet).await?;
+
+    let receipt = provider
+        .send_tx_envelope(tx_envelope)
+        .await?
+        .get_receipt()
+        .await?;
+
+    println!("Sent transaction: {}", receipt.transaction_hash);
+
+    // explorer
+    // https://testnet-explorer.optimism.io/
+
+    assert_eq!(receipt.from, alice);
+    assert_eq!(receipt.to, Some(bob));
 
     Ok(())
 }
