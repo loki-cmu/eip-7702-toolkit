@@ -26,3 +26,5 @@ bak/*
 forge-contracts/**/lib*
 forge-contracts/**/out*
 forge-contracts/**/cache*
+
+pp.sh
