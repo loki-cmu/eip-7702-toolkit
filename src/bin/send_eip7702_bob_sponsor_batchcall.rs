@@ -1,5 +1,8 @@
 //! Example: Bob sponsors gas for Alice to transfer ETH to Dave using EIP-7702
 
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 use alloy::{
     eips::eip7702::{Authorization, SignedAuthorization},
     network::{TransactionBuilder, TransactionBuilder7702},
