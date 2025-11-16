@@ -2289,6 +2289,7 @@ dependencies = [
  "alloy",
  "anyhow",
  "hex",
+ "log",
  "tokio",
 ]
 

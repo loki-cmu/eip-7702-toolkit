@@ -55,7 +55,7 @@ async fn main() -> anyhow::Result<()> {
     println!("bob address: {:?}", bob_sponsor.address());
     println!("alice1 address: {:?}", alice_1.address());
     println!("dave1 address: {:?}", bob_sponsor.address());
-    println!("alice2 address: {:?}", bob_sponsor.address());
+    println!("alice2 address: {:?}", alice_2.address());
     println!("dave2 address: {:?}", bob_sponsor.address());
 
     let rpc_url = anvil.endpoint_url();
